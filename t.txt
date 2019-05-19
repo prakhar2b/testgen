@@ -1,0 +1,318 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Author : Prakhar Pratyush <prakharlabs@gmail.com>
+#
+#----------------------------------------------------------
+
+import pytest
+
+{% for n, step_desc, step in x %}
+def step_{{n}}(driver):
+    """
+    {{step_desc}}
+    """
+
+    {% set step_wait = step.config.step_wait -%}
+
+    {# #################################################################################### -#}
+    {# #######################       Input                    ############################# -#}
+    {# #################################################################################### -#}
+
+    {% if step.type == "input" -%}
+
+    {% if 'locators' in step -%}
+    {% set l=step.locators[0] -%}
+    elem = None
+
+    {% if 'position' in l -%}
+    {% set p_flag=1 -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag=0 -%}
+    {% endif -%}
+    try:
+    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    	{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    	elem = {{elem}}
+    except Exception as ex:
+		print(ex)
+
+	{% if 'position' in l -%}
+	elem = elem[position] if len(elem) >= position else None
+	{% endif -%}
+
+
+	{% for l in step.locators[1:] -%}
+	{% if 'position' in l -%}
+    {% set p_flag=1 -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag=0 -%}
+    {% endif -%}
+
+	if not elem:
+	    try:
+	    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    		{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    		elem = {{elem}}
+	    except Exception as ex:
+			print(ex)
+
+		{% if 'position' in l -%}
+		elem = elem[position] if len(elem) >= position else None
+		{% endif -%}
+
+	{% endfor -%}
+
+
+	if not elem:
+		raise Exception("No element found. Test Failed.")
+
+	{% endif -%}
+
+
+	{% if 'subtype' in step and step.subtype=="textbox" %}
+	text = step.text
+	elem.send_keys(text)
+	{% endif -%}
+
+	driver.implicitly_wait({{step_wait}})
+
+	{# #################################################################################### -#}
+    {# #######################           Click                ############################# -#}
+    {# #################################################################################### -#}
+
+    {% elif step.type == "click" -%}
+
+
+    {% if 'locators' in step -%}
+    {% set l=step.locators[0] -%}
+    elem = None
+
+    {% if 'position' in l -%}
+    {% set p_flag = 1 -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag=0 -%}
+    {% endif -%}
+    try:
+    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    	{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    	elem = {{elem}}
+    except Exception as ex:
+		print(ex)
+
+	{% if 'position' in l -%}
+	elem = elem[position] if len(elem) >= position else None
+	{% endif -%}
+
+
+	{% for l in step.locators[1:] -%}
+	{% if 'position' in l -%}
+    {% set p_flag = 1|int -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag = 0 -%}
+    {% endif -%}
+
+	if not elem:
+	    try:
+	    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    		{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    		elem ={{elem}}
+	    except Exception as ex:
+			print(ex)
+
+		{% if 'position' in l -%}
+		elem = elem[position] if len(elem) >= position else None
+		{% endif -%}
+
+	{% endfor %}
+
+	if not elem:
+		raise Exception("No element found. Test Failed.")
+	{% endif -%}
+
+
+	elem_type = elem.get_attribute("type")
+
+
+	if elem_type == "submit":
+		elem.submit()
+	else:
+		elem.click()
+	
+	
+	driver.implicitly_wait({{step_wait}})
+	{# #################################################################################### -#}
+    {# #######################            Wait                ############################# -#}
+    {# #################################################################################### -#}
+
+
+	{% elif step.type == "wait" -%}
+
+    {% if 'until' in step -%}
+    {% set flag_until = 1 -%}
+    # Explicit wait (Condition)
+    {% else -%}
+    {% set flag_until = 0 -%}
+    {% endif -%}
+
+    {% if flag_until-%}
+    {% set condition = "'" + step.until + "'" -%}
+    do_condition({{condition}}, {{step.value}}, driver)
+    {% else -%}
+    driver.implicitly_wait(step.value)
+    {% endif -%}
+
+    
+    driver.implicitly_wait({{step_wait}})
+	{# #################################################################################### -#}
+    {# #######################            Assertion            ############################# -#}
+    {# #################################################################################### -#}
+
+
+	{% elif step.type == "assertion" -%}
+
+	{% set assertion_type = step.assertionType -%}
+
+	{% if assertion_type == "textExists"-%}
+
+	{% if 'locators' in step -%}
+    {% set l=step.locators[0] -%}
+    elem = None
+
+    {% if 'position' in l -%}
+    {% set p_flag=1 -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag=0 -%}
+    {% endif -%}
+    try:
+    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    	{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    	elem = {{elem}}
+    except Exception as ex:
+		print(ex)
+
+	{% if 'position' in l -%}
+	elem = elem[position] if len(elem) >= position else None
+	{% endif -%}
+
+
+	{% for l in step.locators[1:] -%}
+	{% if 'position' in l -%}
+    {% set p_flag=1 -%}
+    {% set position = l.position|int -1 -%}
+    position = {{position}}
+    {% else -%}
+    {% set p_flag=0 -%}
+    {% endif -%}
+
+	if not elem:
+	    try:
+	    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+    		{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+    		elem = {{elem}}
+	    except Exception as ex:
+			print(ex)
+
+		{% if 'position' in l -%}
+		elem = elem[position] if len(elem) >= position else None
+		{% endif -%}
+
+	{% endfor -%}
+
+
+	if not elem:
+		raise Exception("No element found. Test Failed.")
+
+	{% endif -%}
+
+	{% set val = step.value -%}
+	assert elem.text.__contains__("{{val}}")
+
+
+	{% elif assertion_type == "elementNotExists" -%}
+	try:
+		{% if 'locators' in step -%}
+	    {% set l=step.locators[0] -%}
+	    elem = None
+
+	    {% if 'position' in l -%}
+	    {% set p_flag=1 -%}
+	    {% set position = l.position|int -1 -%}
+	    position = {{position}}
+	    {% else -%}
+	    {% set p_flag=0 -%}
+	    {% endif -%}
+	    try:
+	    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+	    	{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+	    	elem = {{elem}}
+
+
+		{% if 'position' in l -%}
+		elem = elem[position] if len(elem) >= position else None
+		{% endif -%}
+
+
+		{% for l in step.locators[1:] -%}
+
+		{% if 'position' in l -%}
+	    {% set p_flag=1 -%}
+	    {% set position = l.position|int -1 -%}
+	    position = {{position}}
+	    {% else -%}
+	    {% set p_flag=0 -%}
+	    {% endif -%}
+
+		if not elem:
+		    try:
+		    	{% set elem = get_elem_syntax(l.type, p_flag, l.key) -%}
+	    		{% set elem = elem.replace('value', "'" + l.value + "'") -%}
+	    		elem = {{elem}}
+			{% if 'position' in l -%}
+			elem = elem[position] if len(elem) >= position else None
+			{% endif -%}
+
+		{% endfor -%}
+
+		assert False, "Found element with id idres"
+
+	except Exception:
+		assert True
+
+	{% endif -%}
+	{% endif -%}
+	driver.implicitly_wait({{step_wait}})
+
+
+
+	{% endif -%}
+
+{% endfor %}
+
+
+
+def test_no_result_found(driver_):
+	global driver
+	driver = driver_
+
+    driver.get("https://www.google.com")
+    try:
+        global_step_wait = 5
+        driver.implicitly_wait(global_step_wait)
+		{% for n in range(1,6) %}
+		    step_{{n}}(driver)
+		{% endfor %}
+    except Exception as ex:
+        print(ex)
+
+	driver.quit()
